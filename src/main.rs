@@ -5,14 +5,6 @@
 
 use std::time;
 
-struct Board<'a> {
-    board: &'a [[u8; 9]; 9],
-    bitfield_matrix: [[u16; 9]; 9],
-    iterations: i32,
-    backtrack_iterations: i32,
-    is_solvable: bool,
-}
-
 
 fn find_next_empty_cell(board: &[[u8; 9]; 9]) -> Option<(usize, usize)> {
     // loop over the board until an empty cell is found
