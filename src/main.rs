@@ -22,10 +22,29 @@ fn find_next_empty_cell(board: &[[u8; 9]; 9]) -> Option<(usize, usize)> {
 // in the row and column it's in
 fn update_bitfield_matrix(
     bitfield_matrix: &mut [[u16; 9]; 9],
+	board: &[[u8; 9]; 9],
     cell_x: usize,
     cell_y: usize,
     value: u8,
 ) -> () {
+	
+	if value == 0 {
+		if board[cell_y][cell_x] == 0 {
+			return;
+		}
+		
+		for i in 0..9 {
+		    let bitmask_disable: u16 = !(1 << (board[cell_y][cell_x] - 1));
+		    let block_position_x: usize = (cell_x / 3) * 3;
+		    let block_position_y: usize = (cell_y / 3) * 3;
+			
+	        (*bitfield_matrix)[cell_y][i] &= bitmask_disable;
+	        (*bitfield_matrix)[i][cell_x] &= bitmask_disable;
+	        (*bitfield_matrix)[block_position_y + i / 3][block_position_x + i % 3] &= bitmask_disable;
+	    }
+		return;
+	}
+	
     // remove the value from every cell in the given and column row with a for loop in the following way:
     // create a number with all ones except the flag to set, which is a zero
     // store this in a variable so we only have to calculate it once
@@ -83,7 +102,7 @@ fn generate_bitfield_matrix(board: &[[u8; 9]; 9]) -> [[u16; 9]; 9] {
     for y in 0..9 {
         for x in 0..9 {
             if board[y][x] != 0 {
-                update_bitfield_matrix(&mut bitfield_matrix, x, y, board[y][x]);
+                update_bitfield_matrix(&mut bitfield_matrix, &board, x, y, board[y][x]);
             }
         }
     }
@@ -122,9 +141,9 @@ fn solve_sudoku(
             // set the new value
             (*board)[cell_y][cell_x] = value;
 
-			println!("{:?}\n", board);
+			// println!("{:?}\n", board);
 			// update the bitfield matrix
-			update_bitfield_matrix(&mut *bitfield_matrix, cell_x, cell_y, value);
+			update_bitfield_matrix(&mut *bitfield_matrix, &board, cell_x, cell_y, value);
 
             //update_board(&mut *board, &bitfield_matrix);
 
@@ -133,7 +152,7 @@ fn solve_sudoku(
                 return true;
             } else {
 				(*board)[cell_y][cell_x] = 0u8;
-				return false;
+				update_bitfield_matrix(&mut *bitfield_matrix, &board, cell_x, cell_y, 0);
 			}
         }
     }
@@ -143,7 +162,7 @@ fn solve_sudoku(
 
 #[allow(unused)]
 fn main() {
-    let normal_sudoku = [
+    let mut normal_sudoku = [
         [5, 1, 7, 6, 0, 0, 0, 3, 4],
         [2, 8, 9, 0, 0, 4, 0, 0, 0],
         [3, 4, 6, 2, 0, 5, 0, 9, 0],
@@ -154,6 +173,8 @@ fn main() {
         [7, 0, 3, 4, 0, 0, 5, 6, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ];
+
+	   let mut normal_sudoku_bitfield_matrix = generate_bitfield_matrix(&normal_sudoku);
 
     // local runtime:
     // 250ms on dev build
@@ -184,6 +205,9 @@ fn main() {
         [0, 0, 0, 0, 4, 0, 0, 0, 9],
     ];
 
+	let mut empty_sudoku = [[0u8; 9]; 9];
+	let mut empty_sudoku_bitfield_matrix = generate_bitfield_matrix(&empty_sudoku);
+
     // let mut test = [[0i32; 9]; 9];
     // test[2][2] = 1i32;
     // test[6][8] = 4i32;
@@ -192,12 +216,13 @@ fn main() {
     let now = time::Instant::now();
 
 
-    solve_sudoku(&mut hardest_sudoku, &mut hardest_sudoku_bitfield_matrix);
+	// solve_sudoku(&mut hardest_sudoku, &mut hardest_sudoku_bitfield_matrix);
 
+	update_bitfield_matrix(&mut empty_sudoku_bitfield_matrix, &mut empty_sudoku, 3, 3, 5);
 
     println!(
         "{:?} \n {:?}",
-        hardest_sudoku, hardest_sudoku_bitfield_matrix
+        empty_sudoku, empty_sudoku_bitfield_matrix
     );
     // let new_bitfield_matrix = generate_bitfield_matrix(&test);
     // println!("{:#?}", new_bitfield_matrix);
